@@ -20,7 +20,6 @@
             let cityId = getCityId(cities, userLoc);
 
             //`https://maps.googleapis.com/maps/api/geocode/json?address=Buffalo+NY&key=${gkey}`
-            // Test comment
 
             fetch(`http://api.openweathermap.org/data/2.5/forecast?id=${cityId}&APPID=${wkey}`).then(res => {
                 return res.json();
@@ -32,10 +31,10 @@
                 });
                 dts = Math.min(...dts);
                 weather = weather.filter(res => res.dt === dts)[0];
-                document.getElementById("outputLocation").textContent = response.name;
-                document.getElementById("outputTemp").textContent = fahrenheitTemp.toString() + "°F";
-                document.getElementById("outputWeatherImage").src = "http://openweathermap.org/img/w/" + response.weather[0].icon + ".png";
-                document.getElementById("outputCurrentConditions").textContent = response.weather[0].description;
+                // document.getElementById("outputLocation").textContent = response.name;
+                // document.getElementById("outputTemp").textContent = fahrenheitTemp.toString() + "°F";
+                // document.getElementById("outputWeatherImage").src = "http://openweathermap.org/img/w/" + response.weather[0].icon + ".png";
+                // document.getElementById("outputCurrentConditions").textContent = response.weather[0].description;
             });
         });
     })
