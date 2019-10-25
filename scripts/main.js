@@ -20,7 +20,6 @@
             let cityId = getCityId(cities, userLoc);
 
             //`https://maps.googleapis.com/maps/api/geocode/json?address=Buffalo+NY&key=${gkey}`
-            // Test comment
 
             fetch(`http://api.openweathermap.org/data/2.5/forecast?id=${cityId}&APPID=${wkey}`).then(res => {
                 return res.json();
