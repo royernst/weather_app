@@ -31,7 +31,6 @@
                 });
                 dts = Math.min(...dts);
                 weather = weather.filter(res => res.dt === dts)[0];
-                debugger;
                 document.getElementById("outputLocation").textContent = response.name;
                 document.getElementById("outputTemp").textContent = fahrenheitTemp.toString() + "°F";
                 document.getElementById("outputWeatherImage").src = "http://openweathermap.org/img/w/" + response.weather[0].icon + ".png";
