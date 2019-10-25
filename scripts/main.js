@@ -19,7 +19,7 @@
             let wkey = vals[1].weather;
             let cityId = getCityId(cities, userLoc);
 
-            //https://maps.googleapis.com/maps/api/geocode/json?address=1600+Amphitheatre+Parkway,+Mountain+View,+CA&key=YOUR_API_KEY
+            //`https://maps.googleapis.com/maps/api/geocode/json?address=Buffalo+NY&key=${gkey}`
 
             fetch(`http://api.openweathermap.org/data/2.5/forecast?id=${cityId}&APPID=${wkey}`).then(res => {
                 return res.json();
@@ -42,6 +42,7 @@
 
     function getCityId(cityList, cityName) {
         let filteredCities = cityList.filter(city => {
+            // Hard-coded to narrow down selection to the correct Buffalo while in dev
             return city.name.toLowerCase() === cityName && Math.trunc(city.coord.lon)%78 === 0;
         });
         if (!filteredCities.length) {
@@ -74,6 +75,7 @@
             return require(["key"], resp => {
                 res(resp);
             }, err => {
+                // TODO: Have a box with an option to either upload a key file or manually input the key.
                 console.log("Keys file not found, prompting user for replacement.");
                 let replKey = prompt("Please provide an API key in order to get weather.", "API Key");
                 if (!replKey) {
