@@ -28,6 +28,7 @@ someOtherfoler/
 *.tar
 *.zip
 
-# Key #
-#######
+# Misc #
+########
 *.txt
+key.json
