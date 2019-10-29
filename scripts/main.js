@@ -7,23 +7,26 @@
         waitSeconds: 10,
         catchError: true
     });
-    
+
+    // Loading these asynchronously on page load to prevent a delay when clicking the submit button
+    let cityList = getCityList();
+    let keys = getKeys();
 
     let locInput = document.getElementById("location");
-    locInput.addEventListener("change", () => {
+    let submitButton = document.getElementById("submit_button");
+    submitButton.addEventListener("click", () => {
         let userLoc = locInput.value.trim().toLowerCase();
-        getMetadata().then(vals => {
-            if (!vals[0] || !vals[1]) return;
-            let cities = vals[0];
-            let gkey = vals[1].goog;
-            let wkey = vals[1].weather;
-            let cityId = getCityId(cities, userLoc);
 
-            //`https://maps.googleapis.com/maps/api/geocode/json?address=Buffalo+NY&key=${gkey}`
+        getMetadata().then(vals => {
+            let lKey = keys.locIq;
+            let wkey = keys.weather;
+            let cityId = getCityId(cityList, userLoc);
+
+            //`https://us1.locationiq.com/v1/search.php?key=${lKey}&city=${input1}&state=${input2}&format=json`
 
             fetch(`http://api.openweathermap.org/data/2.5/forecast?id=${cityId}&APPID=${wkey}`).then(res => {
                 return res.json();
-            }).then( weather => {
+            }).then(weather => {
                 weather = weather.list;
                 let dts = [];
                 weather.forEach(result => {
@@ -42,7 +45,7 @@
     function getCityId(cityList, cityName) {
         let filteredCities = cityList.filter(city => {
             // Hard-coded to narrow down selection to the correct Buffalo while in dev
-            return city.name.toLowerCase() === cityName && Math.trunc(city.coord.lon)%78 === 0;
+            return city.name.toLowerCase() === cityName && Math.trunc(city.coord.lon) % 78 === 0;
         });
         if (!filteredCities.length) {
             console.error("No matching cities found");
@@ -56,38 +59,36 @@
             console.warn("Too many cities found, please narrow search");
             getCityId(filteredCities, cityName);
         }
-        
+
     }
 
-    async function getMetadata(userInput) {
-        let cities = new Promise((res, rej) => {
-            return require(["cityList"], resp => {
+    async function getCityList() {
+        return new Promise((res, rej) => {
+            require(["cityList"], resp => {
                 // Filtering out all non-US cities for this app
-                res(resp.filter(city => {
-                    return city.country === "US";
-                }));
+                res(resp.filter(city => city.country === "US"));
             }, err => {
                 console.log("Cities file not found.");
-            });
+            })
         });
-        let keys = new Promise((res, rej) => {
-            return require(["key"], resp => {
+    }
+
+    async function getKeys() {
+        return new Promise((res, rej) => {
+            require(["key"], resp => {
                 res(resp);
             }, err => {
                 // TODO: Have a box with an option to either upload a key file or manually input the key.
                 console.log("Keys file not found, prompting user for replacement.");
-                let replKey = prompt("Please provide an API key in order to get weather.", "API Key");
+                let replWKey = prompt("Please provide an API key in order to get weather.", "API Key");
                 if (!replKey) {
                     throw new Error("No API key was provided.");
                 };
                 res({
-                    weather: replKey
+                    weather: replWKey,
+                    locIq: void 0 // Undef unless one can be offered
                 });
             });
         });
-        return await Promise.all([cities, keys]).then(values => {
-            return values;
-        });
-        
     }
-})()
+})();
