@@ -1,20 +1,39 @@
-(function() {
+(async function() {
     requirejs.config({
         paths: {
-            cityList: "city.list.json?callback=define",
-            key: "key.json?callback=define"
+            // cityList: "city.list.json?callback=define",
+            key: "key.json?callback=define",
+            cityList: "city"
+                // key: "key"
         },
         waitSeconds: 10,
         catchError: true
     });
 
-    // Loading these asynchronously on page load to prevent a delay when clicking the submit button
-    let cityList = getCityList();
-    let keys = getKeys();
+    /**
+     *
+     * Front load these asynchronously to prevent a delay when clicking the submit button. City list is YUGE.
+     * Like 23mb of text huge. Definitely wouldn't do this on a production site, was more for my own edification
+     * and an excuse to acquaint myself with using requirejs on the front end. The OpenWeatherAPI accepts the city info
+     * as queries passed in the URL, and this is really only useful if I want to sanitize my inputs by only allowing
+     * the user to select from a drop-down menu or something in the future.
+     */
+    let keys, cities;
+    try {
+        keys = await getFile("key");
+        cities = await getFile("cityList");
+    } catch (err) {
+        // Hide usual elements, replace with message
+        // "Do you have an API key to provide? (Yes) (No)"
+        // if Yes, then add a box to input one in text
+        // if No, then replace page with "Sorry, can't use site without API key. Please contact site admin for key."
+
+    }
 
     let locInput = document.getElementById("location");
     let submitButton = document.getElementById("submit_button");
     submitButton.addEventListener("click", () => {
+        if (!cityList.length || !keys.length) {}
         let userLoc = locInput.value.trim().toLowerCase();
 
         getMetadata().then(vals => {
@@ -55,40 +74,44 @@
             // This is hard-coded until the Google Geocoding stuff is set up
             return filteredCities[0].id;
         } else {
-            // Recursive placeholder
+
             console.warn("Too many cities found, please narrow search");
             getCityId(filteredCities, cityName);
         }
 
     }
 
-    async function getCityList() {
-        return new Promise((res, rej) => {
-            require(["cityList"], resp => {
-                // Filtering out all non-US cities for this app
-                res(resp.filter(city => city.country === "US"));
-            }, err => {
-                console.log("Cities file not found.");
-            })
-        });
-    }
-
-    async function getKeys() {
-        return new Promise((res, rej) => {
-            require(["key"], resp => {
+    async function getFile(fileName) {
+        let file = new Promise((res, rej) => {
+            require([`${fileName}`], resp => {
                 res(resp);
             }, err => {
-                // TODO: Have a box with an option to either upload a key file or manually input the key.
-                console.log("Keys file not found, prompting user for replacement.");
-                let replWKey = prompt("Please provide an API key in order to get weather.", "API Key");
-                if (!replKey) {
-                    throw new Error("No API key was provided.");
-                };
-                res({
-                    weather: replWKey,
-                    locIq: void 0 // Undef unless one can be offered
-                });
+                console.log(`File "${fileName}" not found.`);
+                rej(void 0);
             });
         });
+        return await file;
     }
+
+    function getReplacementKey(keyType) {
+        let replWKey = prompt("Please provide an API key in order to get weather.", "API Key");
+        if (!replWKey) {
+            throw new Error("No API key was provided.");
+        };
+        return replWKey;
+    }
+
+    // async function getKeys() {
+    //     return new Promise((res, rej) => {
+    //         return require(["key"], resp => {
+    //             res(resp);
+    //         }, err => {
+    //             // TODO: Have a box with an option to either upload a key file or manually input the key.
+    //             console.log("Keys file not found, prompting user for replacement.");
+    //         });
+    //         // Filtering out all non-US cities for this app
+    //         let cities = resp.filter(city => city.country === "US");
+    //         res(cities);
+    //     });
+    // }
 })();
