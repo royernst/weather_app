@@ -23,14 +23,6 @@ h2 {
     margin: 0;
 }
 
-#get_location {
-    display: none;
-}
-
 #weather_modal {
-    display: none;
-}
-
-#key_add {
     display: none;
 }
