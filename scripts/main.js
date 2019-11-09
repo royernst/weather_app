@@ -150,13 +150,11 @@
             lat: parseFloat(userCityInfo[0].lat).toFixed(1)
         };
         // Compares the coordinates of the user location with the coordinates of the city list and returns the matching city's ID
-        debugger;
         let matchingCities = cityList.filter(city => {
             return (city.name === userCityInfo[0].address.city) && (city.coord.lon.toFixed(1) === userCityCoords.lon) &&
                 (city.coord.lat.toFixed(1) === userCityCoords.lat);
         });
-        cityId = matchingCities[0].id;
-        return cityId;
+        return matchingCities[0].id;
     }
 
     /**
@@ -204,8 +202,7 @@
                 min: 801,
                 max: 804
             }
-        ]
-        debugger;
+        ];
         let weatherId = weatherInfo.weather[0].id;
         let currCondition;
         conditionIndex.forEach(ind => {
