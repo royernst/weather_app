@@ -2,10 +2,10 @@
     "use strict";
     requirejs.config({
         paths: {
-            // cities: "city.list.json?callback=define",
-            // keys: "key.json?callback=define"
-            cities: "city",
-            keys: "key"
+            cities: "city.list.json?callback=define",
+            keys: "key.json?callback=define"
+            // cities: "city",
+            // keys: "key"
         },
         waitSeconds: 10,
         catchError: true
@@ -25,55 +25,57 @@
     }
 
     /**
-     *
-     * Front load these asynchronously to prevent needing to fetch when clicking the submit button. City list is YUGE...`
+     * Simulates loading external data from a remote server.
+     * Front loading these asynchronously to prevent needing to fetch when clicking the submit button. City list is YUGE...
      * like 23mb of text. Definitely wouldn't do this on a production site. Normally I'd find a different way to
-     * solve this particular problem or just import it directly as a module, but this was more for my own edification
+     * narrow down city data or just import it directly as a module, but this was more for my own edification
      * and an excuse to acquaint myself with using requirejs on the front end. The OpenWeatherAPI accepts the city info
      * as queries passed in the URL, and this is really only useful if I want to sanitize my inputs by only allowing
      * the user to select from a drop-down menu or something in the future.
      */
     let fileInfo = getExternalFileInfo();
-    debugger;
-    let locInput = document.getElementById("location");
+    let cityInput = document.getElementById("city_input");
     let submitButton = document.getElementById("submit_button");
-    submitButton.addEventListener("click", async() => {
-        let cities = await fileInfo["cities"];
-        let keys = await fileInfo["keys"];
-        debugger;
-        if (!cities.length || !keys.length) {}
-        let userLoc = locInput.value.trim().toLowerCase();
-        let locKey = keys.locKey;
-        let weatherkey = keys.weather;
-        let cityId = getCityId(cities, userLoc);
-
-        //`https://us1.locationiq.com/v1/search.php?key=${locKey}&city=${input1}&state=${input2}&format=json`
-
-        fetch(`http://api.openweathermap.org/data/2.5/forecast?id=${cityId}&APPID=${weatherkey}`).then(res => {
-            return res.json();
-        }).then(respWeather => {
-            weather = respWeather.list;
-            let dts = [];
-            weather.forEach(result => {
-                dts.push(result.dt);
-            });
-            dts = Math.min(...dts);
-            weather = weather.filter(res => res.dt === dts)[0];
-            // document.getElementById("outputLocation").textContent = response.name;
-            // document.getElementById("outputTemp").textContent = fahrenheitTemp.toString() + "°F";
-            // document.getElementById("outputWeatherImage").src = "http://openweathermap.org/img/w/" + response.weather[0].icon + ".png";
-            // document.getElementById("outputCurrentConditions").textContent = response.weather[0].description;
-        });
+    let stateSelector = document.getElementById("state_list");
+    let stateList = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA",
+        "MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+        "VA","WA","WV","WI","WY"];
+    stateList.forEach(state => {
+        let stateOption = document.createElement("option");
+        stateOption.value = stateOption.innerText = state;
+        stateSelector.appendChild(stateOption);
     });
-
-
-
-    // let newArray = [1, 2, 3];
-
-    // await newArray.asyncForEach(thing => {
-    //     // This is an actual callback. Still need to work on the iterator and figure out the properties of forEach outside of a regular for loop
-    //     alert(thing);
-    // });
+    submitButton.addEventListener("click", async() => {
+        // Make sure fileInfo has finished loading before continuing incase network is slow
+        fileInfo = await fileInfo;
+        let cities, weather, weatherKey, locationKey, userCity, userState, cityId;
+        try {
+            cities = fileInfo["cities"];
+            weatherKey = fileInfo["keys"].weather;
+            locationKey = fileInfo["keys"].loc;
+            userCity = cityInput.value.trim().toLowerCase();
+            userState = stateSelector.value.toLowerCase();
+            // userCity = "buffalo";
+            // userState = "ny";
+            cityId = await getCityId(locationKey, cities, userCity, userState);
+            weather = await getWeather(weatherKey, cityId);
+            debugger;
+        } catch (e) {
+            // TODO: Find more elegant way to handle input sanitization rather than try/catching a block
+            alert("Error attempting to fetch location or weather data:" + e);
+        }
+        // weather = respWeather.list;
+        // let dts = [];
+        // weather.forEach(result => {
+            // dts.push(result.dt);
+        // });
+        // dts = Math.min(...dts);
+        // weather = weather.filter(res => res.dt === dts)[0];
+        // // document.getElementById("outputLocation").textContent = response.name;
+        // // document.getElementById("outputTemp").textContent = fahrenheitTemp.toString() + "°F";
+        // // document.getElementById("outputWeatherImage").src = "http://openweathermap.org/img/w/" + response.weather[0].icon + ".png";
+        // // document.getElementById("outputCurrentConditions").textContent = response.weather[0].description;
+    });
 
     async function getExternalFileInfo() {
 
@@ -132,26 +134,31 @@
         return replKey;
     }
 
-    function getCityId(cityList, cityName) {
-        //         // Filtering out all non-US cities for this app
-        //         let cities = resp.filter(city => city.country === "US");
-        //         res(cities);
-        let filteredCities = cityList.filter(city => {
-            // Hard-coded to narrow down selection to the correct Buffalo while in dev
-            return city.name.toLowerCase() === cityName && Math.trunc(city.coord.lon) % 78 === 0;
-        });
-        if (!filteredCities.length) {
-            console.error("No matching cities found");
-            return;
-        } else if (filteredCities.length === 1) {
-            // This is hard-coded until the Google Geocoding stuff is set up
-            return filteredCities[0].id;
-        } else {
-
-            console.warn("Too many cities found, please narrow search");
-            getCityId(filteredCities, cityName);
-        }
+    /**
+     * Grabs the appropriate ID for the user's city from the city list
+     */
+    async function getCityId(key, cityList, userCity, userState) {
+        let fetchUrl = `https://us1.locationiq.com/v1/search.php?key=${key}&city=${userCity}&state=${userState}&countrycodes=us&addressdetails=1&dedupe=1&format=json`;
+        let userCityInfo = await fetch(fetchUrl);
+        userCityInfo = await userCityInfo.json();
+        // Filtering out all results that don't match the provided city name
+        userCityInfo = userCityInfo.filter(info => info.address.city && (info.address.city.toLowerCase() === userCity));
+        // These were returned as strings, so need to parse them as floats to round to the second decimal place in order to get a close-enough comparison
+        // when searching through the coords of the city list with an area as big as a city
+        let userCityCoords = {
+            lon: parseFloat(userCityInfo[0].lon).toFixed(2),
+            lat: parseFloat(userCityInfo[0].lat).toFixed(2)
+        };
+        // Compares the coordinates of the user location with the coordinates of the city list and returns the matching city's ID
+        return cityList.filter(city => (city.coord.lon.toFixed(2) === userCityCoords.lon) && (city.coord.lat.toFixed(2) === userCityCoords.lat))[0].id;
     }
 
+    /**
+     * Fetches current weather from a location based on the provided city ID
+     */
+    async function getWeather(key, cityId) {
+        let weather = await fetch(`http://api.openweathermap.org/data/2.5/weather?id=${cityId}&APPID=${key}`);
+        return await weather.json();
+    }
 
 })();

@@ -23,6 +23,11 @@ h2 {
     margin: 0;
 }
 
+#state_list {
+    width: 50px;
+    height: 21px;
+}
+
 #weather_modal {
     display: none;
 }
