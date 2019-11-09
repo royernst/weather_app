@@ -21,9 +21,6 @@ body {
     display: none;
     opacity: 0;
     transition: all ease 0.8s;
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
     background-size: cover;
 }
 
