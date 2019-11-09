@@ -14,16 +14,16 @@
         <select id="state_list" enterkeyhint="send" required></select>
         <button type="submit" id="submit_button">Search</button>
     </div>
-    <div id="weather_modal">
-        <div id="weather_output">
-            <h3>CURRENT CONDITIONS FOR:</h3>
-            <h2 id="outputLocation"></h2>
-            <h1 id="outputTemp"></h1>
-            <img id="outputWeatherImage" />
-            <h2 id="outputCurrentConditions"></h2>
-            <script async type="text/javascript" data-main="scripts/main" src="./scripts/require.js"></script>
+    <div id="weather_output">
+        <div id="weather_modal">
+            <p class="output_header">CURRENT CONDITIONS FOR:</p>
+            <p id="current_location" class="output_text"></p>
+            <p id="current_temp" class="output_text"></p>
+            <img id="current_weather_icon" />
+            <p id="current_conditions" class="output_description"></p>
         </div>
     </div>
+    <script async type="text/javascript" data-main="scripts/main" src="./scripts/require.js"></script>
 </body>
 
 </html>

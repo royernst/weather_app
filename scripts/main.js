@@ -4,8 +4,6 @@
         paths: {
             cities: "city.list.json?callback=define",
             keys: "key.json?callback=define"
-            // cities: "city",
-            // keys: "key"
         },
         waitSeconds: 10,
         catchError: true
@@ -35,46 +33,49 @@
      */
     let fileInfo = getExternalFileInfo();
     let cityInput = document.getElementById("city_input");
-    let submitButton = document.getElementById("submit_button");
     let stateSelector = document.getElementById("state_list");
+    let submitButton = document.getElementById("submit_button");
+    let weatherOutput = document.getElementById("weather_output");
+    let currentLocationOutput = document.getElementById("current_location");
+    let currentTempOutput = document.getElementById("current_temp");
+    let currentWeatherIconOutput = document.getElementById("current_weather_icon");
+    let currentConditionsOutput = document.getElementById("current_conditions");
     let stateList = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA",
         "MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
         "VA","WA","WV","WI","WY"];
+
     stateList.forEach(state => {
         let stateOption = document.createElement("option");
         stateOption.value = stateOption.innerText = state;
         stateSelector.appendChild(stateOption);
     });
+
     submitButton.addEventListener("click", async() => {
         // Make sure fileInfo has finished loading before continuing incase network is slow
         fileInfo = await fileInfo;
-        let cities, weather, weatherKey, locationKey, userCity, userState, cityId;
+        let cities = fileInfo["cities"];
+        let weatherKey = fileInfo["keys"].weather;
+        let locationKey = fileInfo["keys"].loc;
+        let weather,userCity, userState, cityId, currentConditions;
         try {
-            cities = fileInfo["cities"];
-            weatherKey = fileInfo["keys"].weather;
-            locationKey = fileInfo["keys"].loc;
             userCity = cityInput.value.trim().toLowerCase();
             userState = stateSelector.value.toLowerCase();
-            // userCity = "buffalo";
-            // userState = "ny";
             cityId = await getCityId(locationKey, cities, userCity, userState);
             weather = await getWeather(weatherKey, cityId);
-            debugger;
+            currentConditions = getCurrentConditions(weather);
         } catch (e) {
             // TODO: Find more elegant way to handle input sanitization rather than try/catching a block
             alert("Error attempting to fetch location or weather data:" + e);
         }
-        // weather = respWeather.list;
-        // let dts = [];
-        // weather.forEach(result => {
-            // dts.push(result.dt);
-        // });
-        // dts = Math.min(...dts);
-        // weather = weather.filter(res => res.dt === dts)[0];
-        // // document.getElementById("outputLocation").textContent = response.name;
-        // // document.getElementById("outputTemp").textContent = fahrenheitTemp.toString() + "°F";
-        // // document.getElementById("outputWeatherImage").src = "http://openweathermap.org/img/w/" + response.weather[0].icon + ".png";
-        // // document.getElementById("outputCurrentConditions").textContent = response.weather[0].description;
+
+        currentLocationOutput.textContent = `${weather.name}, ${userState.toUpperCase()}`;
+        currentTempOutput.textContent = `${Math.round(weather.main.temp).toString()}°F`;
+        currentWeatherIconOutput.src = `http://openweathermap.org/img/w/${weather.weather[0].icon}.png`;
+        currentConditionsOutput.textContent = weather.weather[0].description;
+        weatherOutput.classList.add(`${currentConditions}`);
+        weatherOutput.style.display = "block";
+        // Using setTimeout to allow the style to set opacity after display: block kicks in so transition animates.
+        setTimeout(() => { weatherOutput.style.opacity = 1 }, 100);
     });
 
     async function getExternalFileInfo() {
@@ -99,10 +100,8 @@
                             weather: getReplacementKey("weather"),
                             loc: getReplacementKey("location info")
                         };
-                    } else if (err.requireModules[0] === "cities") {
-                        resultKeys = getReplacementKey("city info");
                     } else {
-                        alert("Please contact site admin for API key.");
+                        err.requireModules[0] === "cities" ? alert("Unable to retrieve city list.") : alert("Please contact site admin for API key.");
                         resultKeys = null;
                     }
                 }
@@ -111,7 +110,6 @@
             infoObj[key] = await data;
         });
         return infoObj;
-
     }
 
     async function getFile(fileName) {
@@ -142,23 +140,78 @@
         let userCityInfo = await fetch(fetchUrl);
         userCityInfo = await userCityInfo.json();
         // Filtering out all results that don't match the provided city name
-        userCityInfo = userCityInfo.filter(info => info.address.city && (info.address.city.toLowerCase() === userCity));
+        userCityInfo = userCityInfo.filter(info => {
+            return info.address.city && (info.address.city.toLowerCase() === userCity)
+        });
         // These were returned as strings, so need to parse them as floats to round to the second decimal place in order to get a close-enough comparison
         // when searching through the coords of the city list with an area as big as a city
         let userCityCoords = {
-            lon: parseFloat(userCityInfo[0].lon).toFixed(2),
-            lat: parseFloat(userCityInfo[0].lat).toFixed(2)
+            lon: parseFloat(userCityInfo[0].lon).toFixed(1),
+            lat: parseFloat(userCityInfo[0].lat).toFixed(1)
         };
         // Compares the coordinates of the user location with the coordinates of the city list and returns the matching city's ID
-        return cityList.filter(city => (city.coord.lon.toFixed(2) === userCityCoords.lon) && (city.coord.lat.toFixed(2) === userCityCoords.lat))[0].id;
+        debugger;
+        let matchingCities = cityList.filter(city => {
+            return (city.name === userCityInfo[0].address.city) && (city.coord.lon.toFixed(1) === userCityCoords.lon) &&
+                (city.coord.lat.toFixed(1) === userCityCoords.lat);
+        });
+        cityId = matchingCities[0].id;
+        return cityId;
     }
 
     /**
      * Fetches current weather from a location based on the provided city ID
      */
     async function getWeather(key, cityId) {
-        let weather = await fetch(`http://api.openweathermap.org/data/2.5/weather?id=${cityId}&APPID=${key}`);
+        let weather = await fetch(`http://api.openweathermap.org/data/2.5/weather?id=${cityId}&APPID=${key}&units=imperial`);
         return await weather.json();
+    }
+
+    function getCurrentConditions(weatherInfo) {
+        let conditionIndex = [
+            {
+                condition: "thunderstorm",
+                min: 200,
+                max: 232
+            },
+            {
+                condition: "drizzle",
+                min: 300,
+                max: 321
+            },
+            {
+                condition: "rain",
+                min: 500,
+                max: 531
+            },
+            {
+                condition: "snow",
+                min: 600,
+                max: 622
+            },
+            {
+                condition: "fog",
+                min: 700,
+                max: 781
+            },
+            {
+                condition: "clear",
+                min: 800,
+                max: 800
+            },
+            {
+                condition: "overcast",
+                min: 801,
+                max: 804
+            }
+        ]
+        debugger;
+        let weatherId = weatherInfo.weather[0].id;
+        let currCondition;
+        conditionIndex.forEach(ind => {
+            if (weatherId >= ind.min && weatherId <= ind.max) currCondition = ind.condition;
+        });
+        return currCondition;
     }
 
 })();

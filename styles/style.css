@@ -6,28 +6,92 @@ body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
-img {
-    height: 200px;
-    width: auto;
-    padding: 0;
-    margin: auto;
-}
-
-h1 {
-    font-size: 5rem;
-    margin: 0;
-}
-
-h2 {
-    font-size: 3rem;
-    margin: 0;
-}
-
 #state_list {
     width: 50px;
     height: 21px;
 }
 
-#weather_modal {
+#weather_output {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
     display: none;
+    opacity: 0;
+    transition: all ease 0.8s;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+}
+
+.clear {
+    background: url("../assets/media/clear.jpg") no-repeat center center fixed;
+}
+
+.drizzle {
+    background: url("../assets/media/drizzle.jpg") no-repeat center center fixed;
+}
+
+.fog {
+    background: url("../assets/media/fog.jpg") no-repeat center center fixed;
+}
+
+.overcast {
+    background: url("../assets/media/overcast.jpg") no-repeat center center fixed;
+}
+
+.rain {
+    background: url("../assets/media/rain.jpg") no-repeat center center fixed;
+}
+
+.thunderstorm {
+    background: url("../assets/media/thunderstorm.jpg") no-repeat center center fixed;
+}
+
+.snow {
+    background: url("../assets/media/snow.jpg") no-repeat center center fixed;
+}
+
+#weather_modal {
+    width: 40vw;
+    height: 60vh;
+    padding: 10vh 0;
+    position: absolute;
+    text-align: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, .7);
+}
+
+#weather_modal p {
+    margin: 0;
+}
+
+#weather_modal img {
+    height: 30vh;
+    width: auto;
+    padding: 0;
+    margin: 0 auto;
+}
+
+.output_header {
+    font-size: 2vw;
+}
+
+.output_temp {
+    font-size: 4vw;
+}
+
+.output_text {
+    font-size: 3vw;
+}
+
+.output_description {
+    font-size: 4vw;
 }
