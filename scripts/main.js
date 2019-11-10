@@ -125,8 +125,9 @@
     }
 
     function getReplacementKey(keyType) {
-        let replKey = prompt(`Please provide an API key in order to get ${keyType}.`, `${keyType.charAt(0).toUpperCase() + keyType.slice(1)} key`);
+        let replKey = prompt(`Please provide an API key in order to get ${keyType}.`);
         if (!replKey) {
+            alert("Please contact site admin for API key.");
             throw new Error("No API key was provided.");
         };
         return replKey;
